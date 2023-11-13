@@ -1,0 +1,22 @@
+{
+  "collections": [
+    {
+      "title": "Collection Title",
+      "description": "Description",
+      "promptTemplates": [
+        {
+          "title": "Template Title",
+          "content": "Template Content"
+        }
+      ],
+      "placeholders": [
+        {
+          "key": "Placeholder Key",
+          "value": "Placeholder Value",
+          "headline": "Headline",
+          "description": "Placeholder Description"
+        }
+      ]
+    }
+  ]
+}
