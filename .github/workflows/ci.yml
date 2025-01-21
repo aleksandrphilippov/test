@@ -1,0 +1,53 @@
+name: test
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: [ "test" ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Extract metadata (tags, labels) for ${{ matrix.project }}
+        id: meta-info
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.project }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+      - name: Tags for ${{ matrix.project }}
+        run: |
+          echo "Tags for ${{ matrix.project }}: ${{ steps.meta-info.outputs.tags }}"
+      - name: Get deploy tag for ${{ matrix.project }}
+        id: deploy_tag
+        run: |
+          echo "Tags: ${{ steps.meta-info.outputs.tags }}"
+          FIRST_TAG=$(echo "${{ steps.meta-info.outputs.tags }}" | head -n 1)
+          SECOND_TAG=$(echo "${{ steps.meta-info.outputs.tags }}" | head -n 2 | tail -n 1)
+          THIRD_TAG=$(echo "${{ steps.meta-info.outputs.tags }}" | head -n 3 | tail -n 1)
+          IMAGE_NAME="${THIRD_TAG%:*}"
+          IMAGE_TAG="${THIRD_TAG#*:}"
+          echo "::set-output name=IMAGE_NAME::$IMAGE_NAME"
+          echo "::set-output name=IMAGE_TAG::$IMAGE_TAG"
+          echo "{IMAGE_NAME}={$IMAGE_NAME}" >> $GITHUB_OUTPUT
+          echo "{IMAGE_TAG}={$IMAGE_TAG}" >> $GITHUB_OUTPUT
+      - name: Echo IMAGE_TAG  for ${{ matrix.project }}
+        run: |
+          echo "IMAGE_TAG: ${{ steps.deploy_tag.outputs.IMAGE_TAG }}"
+          echo "IMAGE_NAME: ${{ steps.deploy_tag.outputs.IMAGE_NAME }}"
